@@ -1,96 +1,131 @@
 'use strict';
 
-const browserSync = require('browser-sync').create();
+let browserSync = require('browser-sync').create();
 
-// task runner
-const gulp = require('gulp');
-const rename = require('gulp-rename');
+// load all plugins in 'devDependencies' into the variable $
+const $ = require('gulp-load-plugins')({
+  pattern: ['*'],
+  scope: ['devDependencies']
+});
+const pkg = require('./package.json');
 
-// helper task
-const runSequence = require('run-sequence').use(gulp);
-const plumber = require('gulp-plumber');
-const sourcemaps = require('gulp-sourcemaps');
-
-// js bundler
-const webpack = require('webpack');
-
-// sass
-const sass = require('gulp-sass');
-const autoprefixer = require('gulp-autoprefixer');
-
-const isProd = ( process.env.NODE_ENV === 'production' );
+// status
+let isProd = ( process.env.NODE_ENV === 'production' );
 
 // options
-const path = require('./_config/path');
+const path = pkg.paths;
+const PORT = { serve: pkg.serve.port[process.env.NODE_ENV], live: pkg.serve.port['live'] };
 const browserslist = require('./_config/browserslist');
 const webpackConfig = require('./_config/webpack.config');
 
-if (!isProd) {
+function log(color, msg) { return $.logs(color, $.cool() + ' ･｡ﾟ.*･｡ﾟ ' + msg); }
 
-    delete webpackConfig.devtool;
+gulp.task('browser-sync', function () {
+
+  return $.browserSync.init({
+    port: PORT.live,
+    proxy: `localhost:${PORT.serve}`,
+    startPath: '/'
+  });
+
+});
+
+gulp.task('nodemon', (cb) => {
+
+  let stream = $.nodemon({
+    script: 'app.js',
+    env: { 'NODE_ENV': process.env.NODE_ENV },
+    ext: 'js ejs',
+    // watch: ['app.js', 'routes/', 'config/', 'models/', 'views/'],
+    watch: ['app.js'],
+    ignore: ['webpack.config.js', 'path.js', 'browserslist.js'],
+    tasks: function (changedFiles) {
+      let tasks = [];
+      changedFiles.forEach(function (file) {
+        let filename = file.split('/');
+        filename = filename[filename.length - 1];
+        log('magenta', `file changed : ${filename}`);
+        // if (path.extname(file) === '.js' && !~tasks.indexOf('lint')) tasks.push('lint')
+        // if (path.extname(file) === '.css' && !~tasks.indexOf('cssmin')) tasks.push('cssmin')
+      });
+      return tasks;
+    }
+  });
+
+  stream.on('start', function () {
+    $.gutil.log(gutil.colors.green($.cool() + ' Nodemon server started!'));
+    if ($.browserSync.active) $.browserSync.reload();
+  }).on('restart', function () {
+    $.gutil.log($.gutil.colors.blue($.cool() + ' Nodemon server restarted!'));
+  }).on('crash', function () {
+    $.gutil.log($.gutil.colors.red($.cool() + ' Nodemon has crashed!'));
+    stream.emit('restart', 10);  // restart the server in 10 seconds
+  });
+
+  $.opn(`http://localhost:${PORT.serve}`);
+  return stream;
+
+});
+
+gulp.task('webpack', function (done) {
+
+  if (!isProd) {
+    log('red', 'Development Mode');
+    webpackConfig.devtool = 'cheap-source-map';
     webpackConfig.watch = true;
+  } else {
+    log('green', 'Production Mode');
+  }
 
-    webpackConfig.plugins = ( webpackConfig.plugins || [] ).concat([
-        new webpack.DefinePlugin({
-            'process.env': {NODE_ENV: '"production"'}
-        }),
-        new webpack.optimize.UglifyJsPlugin({
-            sourceMap: true,
-            compress: {warnings: false}
-        }),
-        new webpack.LoaderOptionsPlugin({
-            minimize: true
-        })
-    ]);
+  webpack(webpackConfig, function (err, stats) {
 
-}
+    if (err) throw new $.gutil.PluginError("webpack", err);
 
-gulp.task('browser-sync', () => {
+    let time = ( stats.endTime - stats.startTime ) * 0.001;
+    log('cyan', 'webpack compile: ' + time.toFixed(2) + ' sec');
 
-    browserSync.init({
-        server: {
-            baseDir: path.DEST.HTML + '/',
-            directory: true
-        },
-        startPath: './'
-    });
+  });
 
+  if (done) done();
 });
 
-gulp.task('webpack', (done) => {
-
-    webpack(webpackConfig, (error, status) => {
-
-        const time = ( status.endTime - status.startTime ) * 0.001;
-        console.log('webpack after', time.toFixed(2) + ' sec');
-        browserSync.reload();
-        done();
-
-    });
-
-});
 
 gulp.task('sass', () => {
 
-    return gulp.src( path.SRC.SCSS + '/**/*.scss')
-        .pipe( plumber() )
-        .pipe( sourcemaps.init() )
-        .pipe( sass({outputStyle: 'compressed', sourceComments: false}).on('error', sass.logError) )
-        .pipe( autoprefixer(browserslist) )
-        .pipe( sourcemaps.write('./') )
-        .pipe( plumber.stop() )
-        .pipe( gulp.dest(path.DEST.CSS) );
+  return gulp.src(path.SRC.SCSS + '/**/*.scss')
+    .pipe( $.plumber() )
+    .pipe( $.sourcemaps.init() )
+    .pipe( $.sass({outputStyle: 'compressed', sourceComments: false}).on('error', $.sass.logError) )
+    .pipe( $.autoprefixer(browserslist) )
+    .pipe( $.rename({suffix: '.min'}) )
+    .pipe( $.sourcemaps.write('./') )
+    .pipe( $.plumber.stop() )
+    .pipe( gulp.dest(path.DEST.CSS) );
 
 });
 
 gulp.task('watch', () => {
 
-    gulp.watch(['../index.html'], () => {
-        browserSync.reload();
+    gulp.watch([path.SRC.HTML + '/**/*.html'], (cb) => {
+
+      let filename = cb.path.split('/');
+      filename = filename[filename.length - 1];
+
+      log('cyan', `${cb.type} : ${filename}`);
+      if ($.browserSync.active) $.browserSync.reload();
+
     });
 
-    gulp.watch([ path.SRC.SCSS + '/**/*.scss'], () => {
-        runSequence('sass', browserSync.reload);
+    gulp.watch([path.SRC.SCSS + '/**/*.scss'], (cb) => {
+
+      let filename = cb.path.split('/'),
+        type = cb.type;
+
+      filename = filename[filename.length - 1];
+
+      log('cyan', `Detected change: ${filename}`);
+      return $.runSequence('sass');
+
     });
 
 });
@@ -98,12 +133,60 @@ gulp.task('watch', () => {
 
 gulp.task('build', (callback) => {
 
-    return runSequence(['sass', 'webpack'], callback);
+    $.del([path.DEST.RESOURCES])
+      .then(paths => {
+        log('red', `deleted build files and folders:\n${paths}`);
+        $.runSequence(['sass', 'webpack'], cb);
+      });
 
 });
 
 gulp.task('default', (callback) => {
 
-    return runSequence(['browser-sync', 'watch'], ['sass', 'webpack'], callback);
+  console.log(`
+
+                                   |
+                                 /---\\
+                                 : = :
+                                 :   :
+               :,','. '.         :   :---\\
+  ..,,,',.',',;,'.';'.'.'.,.'.'..:.  :   :
+  TASK runner start.
+  `);
+
+  let prompt = new $.Prompt({
+    name: 'select_task',
+    message: 'Please choose what you want.',
+    choices: [
+      '1) Run Development Mode',
+      '2) Production Build',
+      '3) open live-sync server',
+      '-) Exit',
+    ]
+  });
+
+  prompt.ask(function (answer) {
+
+    switch ( answer.split(')')[0] ) {
+      case '1':
+        runSequence(['build'], ['watch', 'nodemon'], ['browser-sync']);
+        break;
+      case '2':
+        isProd = true;
+        runSequence(['build'], () => log('green', 'Build was Complete.'));
+        break;
+      case '3':
+        runSequence(['nodemon']);
+        if (browserSync.active) browserSync.reload();
+        else runSequence(['browser-sync']);
+        break;
+      default:
+        log('green', 'Exit task runner.');
+        break;
+    }
+
+  });
+
+  // // runSequence(['build'], ['nodemon', 'watch'], cb);
 
 });

@@ -1,5 +1,5 @@
-
-node_modules
+typings/
+node_modules/
 # Created by https://www.gitignore.io/api/jetbrains,visualstudio
 
 ### JetBrains ###

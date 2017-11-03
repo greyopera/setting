@@ -18,7 +18,20 @@ const PORT = { serve: pkg.serve.port[process.env.NODE_ENV], live: pkg.serve.port
 const browserslist = require('./_config/browserslist');
 const webpackConfig = require('./_config/webpack.config');
 
-function log(color, msg) { return $.logs(color, $.cool() + ' ･｡ﾟ.*･｡ﾟ ' + msg); }
+const log = (color, msg) => $.logs(color, $.cool() + ' ･｡ﾟ.*･｡ﾟ ' + msg);
+const onError = (err) => console.log(err);
+
+const banner = [
+    "/**",
+    " * @project        <%= pkg.name %>",
+    " * @author         <%= pkg.author %>",
+    " * @build          " + $.moment().format("llll") + " ET",
+    " * @release        " + $.gitRevSync.long() + " [" + $.gitRevSync.branch() + "]",
+    " * @copyright      Copyright (c) " + $.moment().format("YYYY") + ", <%= pkg.copyright %>",
+    " *",
+    " */",
+    ""
+].join("\n");
 
 gulp.task('browser-sync', function () {
 
@@ -89,20 +102,63 @@ gulp.task('webpack', function (done) {
   if (done) done();
 });
 
-
 gulp.task('sass', () => {
 
+  log("-> Compiling scss");
   return gulp.src(path.SRC.SCSS + '/**/*.scss')
-    .pipe( $.plumber() )
-    .pipe( $.sourcemaps.init() )
-    .pipe( $.sass({outputStyle: 'compressed', sourceComments: false}).on('error', $.sass.logError) )
-    .pipe( $.autoprefixer(browserslist) )
-    .pipe( $.rename({suffix: '.min'}) )
-    .pipe( $.sourcemaps.write('./') )
-    .pipe( $.plumber.stop() )
-    .pipe( gulp.dest(path.DEST.CSS) );
+      .pipe( $.plumber({errorHandler: onError}) )
+      .pipe( $.sourcemaps.init({loadMaps: true}) )
+      .pipe( $.sass({
+              outputStyle: 'compressed',
+              sourceComments: false,
+              includePaths: pkg.paths.scss
+          })
+          .on("error", $.sass.logError) )
+      .pipe( $.cached("sass_compile") )
+      .pipe( $.autoprefixer(browserslist) )
+      .pipe( $.sourcemaps.write("./") )
+      .pipe( $.size({gzip: true, showFiles: true}) )
+      .pipe( gulp.dest(path.DEST.CSS) );
 
 });
+
+gulp.task("css", ["scss"], () => {
+
+    log("-> Building css");
+    return gulp.src(path.DEST.CSS + '/**/*.css')
+        .pipe( $.plumber({ errorHandler: onError }) )
+        .pipe( $.newer({ dest: path.DEST.CSS }) )
+        .pipe( $.print() )
+        .pipe( $.sourcemaps.init({loadMaps: true}))
+        .pipe( $.cssnano({
+            discardComments: {
+                removeAll: true
+            },
+            discardDuplicates: true,
+            discardEmpty: true,
+            minifyFontValues: true,
+            minifySelectors: true
+        }) )
+        .pipe( $.header(banner, {pkg: pkg}) )
+        .pipe( $.sourcemaps.write("./") )
+        .pipe( $.size({gzip: true, showFiles: true}) )
+        .pipe( gulp.dest(path.DEST.CSS) )
+        .pipe( $.filter("**/*.css") );
+
+});
+
+// Prism js 작업 - prismjs(번역주: 소스코드 하이라이트) 자바스크립트와 컨피그 파일을 하나의 번들로 합칩니다
+gulp.task("prism-js", () => {
+    log("-> Building prism.min.js...");
+    return gulp.src(pkg.globs.prismJs)
+        .pipe($.plumber({errorHandler: onError}))
+        .pipe($.newer({dest: pkg.paths.build.js + "prism.min.js"}))
+        .pipe($.concat("prism.min.js"))
+        .pipe($.uglify())
+        .pipe($.size({gzip: true, showFiles: true}))
+        .pipe(gulp.dest(pkg.paths.build.js));
+});
+
 
 gulp.task('watch', () => {
 
@@ -141,7 +197,22 @@ gulp.task('build', (callback) => {
 
 });
 
+
+
+
 gulp.task('default', (callback) => {
+
+  const banner = [
+      "/**",
+      " * @project        <%= pkg.name %>",
+      " * @author         <%= pkg.author %>",
+      " * @build          " + $.moment().format("llll") + " ET",
+      " * @release        " + $.gitRevSync.long() + " [" + $.gitRevSync.branch() + "]",
+      " * @copyright      Copyright (c) " + $.moment().format("YYYY") + ", <%= pkg.copyright %>",
+      " *",
+      " */",
+      ""
+  ].join("\n");
 
   console.log(`
 

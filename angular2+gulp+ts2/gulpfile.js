@@ -104,7 +104,6 @@ gulp.task('webpack', function (done) {
 
 gulp.task('sass', () => {
 
-  log("-> Compiling scss");
   return gulp.src(path.SRC.SCSS + '/**/*.scss')
       .pipe( $.plumber({errorHandler: onError}) )
       .pipe( $.sourcemaps.init({loadMaps: true}) )
@@ -124,7 +123,6 @@ gulp.task('sass', () => {
 
 gulp.task("css", ["scss"], () => {
 
-    log("-> Building css");
     return gulp.src(path.DEST.CSS + '/**/*.css')
         .pipe( $.plumber({ errorHandler: onError }) )
         .pipe( $.newer({ dest: path.DEST.CSS }) )
@@ -149,14 +147,14 @@ gulp.task("css", ["scss"], () => {
 
 // Prism js 작업 - prismjs(번역주: 소스코드 하이라이트) 자바스크립트와 컨피그 파일을 하나의 번들로 합칩니다
 gulp.task("prism-js", () => {
-    log("-> Building prism.min.js...");
-    return gulp.src(pkg.globs.prismJs)
-        .pipe($.plumber({errorHandler: onError}))
-        .pipe($.newer({dest: pkg.paths.build.js + "prism.min.js"}))
-        .pipe($.concat("prism.min.js"))
-        .pipe($.uglify())
-        .pipe($.size({gzip: true, showFiles: true}))
-        .pipe(gulp.dest(pkg.paths.build.js));
+
+    return gulp.src( pkg.globs.prismJs )
+        .pipe( $.plumber({errorHandler: onError}) )
+        .pipe( $.newer({dest: pkg.paths.build.js + "prism.min.js"}) )
+        .pipe( $.concat("prism.min.js") )
+        .pipe( $.uglify() )
+        .pipe( $.size({gzip: true, showFiles: true}) )
+        .pipe( gulp.dest(pkg.paths.build.js) );
 });
 
 
@@ -186,7 +184,6 @@ gulp.task('watch', () => {
 
 });
 
-
 gulp.task('build', (callback) => {
 
     $.del([path.DEST.RESOURCES])
@@ -198,24 +195,9 @@ gulp.task('build', (callback) => {
 });
 
 
-
-
 gulp.task('default', (callback) => {
 
-  const banner = [
-      "/**",
-      " * @project        <%= pkg.name %>",
-      " * @author         <%= pkg.author %>",
-      " * @build          " + $.moment().format("llll") + " ET",
-      " * @release        " + $.gitRevSync.long() + " [" + $.gitRevSync.branch() + "]",
-      " * @copyright      Copyright (c) " + $.moment().format("YYYY") + ", <%= pkg.copyright %>",
-      " *",
-      " */",
-      ""
-  ].join("\n");
-
   console.log(`
-
                                    |
                                  /---\\
                                  : = :
@@ -232,24 +214,24 @@ gulp.task('default', (callback) => {
       '1) Run Development Mode',
       '2) Production Build',
       '3) open live-sync server',
-      '-) Exit',
+      '-) Exit'
     ]
   });
 
-  prompt.ask(function (answer) {
+  prompt.ask( (answer) => {
 
     switch ( answer.split(')')[0] ) {
       case '1':
-        runSequence(['build'], ['watch', 'nodemon'], ['browser-sync']);
+        runSequence( ['build'], ['watch', 'nodemon'], ['browser-sync'] );
         break;
       case '2':
         isProd = true;
-        runSequence(['build'], () => log('green', 'Build was Complete.'));
+        runSequence( ['build'], () => log('green', 'Build was Complete.') );
         break;
       case '3':
-        runSequence(['nodemon']);
+        runSequence( ['nodemon'] );
         if (browserSync.active) browserSync.reload();
-        else runSequence(['browser-sync']);
+        else runSequence( ['browser-sync'] );
         break;
       default:
         log('green', 'Exit task runner.');

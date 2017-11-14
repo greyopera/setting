@@ -31,7 +31,7 @@ module.exports = {
           presets: [[
             'es2015',
             {
-              'targets': {'browsers': browserslist},
+              'targets': { 'browsers': browserslist },
               'loose': true,
               'modules': false
             }
@@ -57,6 +57,7 @@ module.exports = {
   },
   devtool: '#cheap-module-source-map',
   plugins: [
+
     new webpack.ProvidePlugin({
       // $: 'jquery',
       jQuery: 'jquery',
@@ -64,10 +65,11 @@ module.exports = {
       moment: 'moment'
       // angular: 'angular'
     }),
+
     new webpack.optimize.UglifyJsPlugin({
       sourceMap: true,
       output: { comments: false },
-      compress: {warnings: false},
+      compress: { warnings: false },
       // mangle: {
       //   // Skip mangling these
       //   except: ['$super', '$', 'jQuery', 'exports', 'require', 'moment', 'Promise', 'Angular', 'angular', 'window']

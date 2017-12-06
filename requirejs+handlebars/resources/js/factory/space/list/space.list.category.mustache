@@ -1,0 +1,21 @@
+
+<nav class="space_bbs__category" id="spaceBbsCategory">
+
+    {{#items.length}}
+    <ul class="menu">
+        {{#items}}
+            <li style="width:{{#getRatio}}{{/getRatio}}%">
+                <a href="#spacebbsContents{{num}}"
+                     data-space-type="{{ num }}"
+                     data-page="{{ page }}"
+                    ><span>{{ string }}</span>
+                </a>
+            </li>
+        {{/items}}
+    </ul>
+    {{/items.length}}
+    {{^items.length}}
+    <p class="no_result">카테고리가 존재하지 않습니다.</p>
+    {{/items.length}}
+
+</nav>

@@ -1,0 +1,42 @@
+<table>
+    <caption>강의 후기 목록</caption>
+    <colgroup>
+        <col width="11%" />
+        <col width="11%" />
+        <col width="7%" />
+        <col width="*" />
+        <col width="12%" />
+        <col width="13%" />
+    </colgroup>
+    <thead>
+    <tr>
+        <th scope="col">시험</th>
+        <th scope="col">선생님</th>
+        <th scope="col">성적</th>
+        <th scope="col">성적후기</th>
+        <th scope="col">작성자</th>
+        <th scope="col">작성일</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#items.length}}
+        {{#items}}
+            <tr>
+                <td class="type">{{type}}</td>
+                <td class="teacher">{{teacher}}</td>
+                <td class="score">{{score}}</td>
+                <td class="title"><a href="{{link}}" target="_blank">{{title}}</a></td>
+                <td>{{ writer }}</td>
+                <td class="date">{{#createdAt}}{{created_at}}{{/createdAt}}</td>
+            </tr>
+        {{/items}}
+        {{/items.length}}
+
+        {{^items.length}}
+            <tr class="is_not_result">
+                <td colspan="6">등록된 후기가 없습니다.</td>
+            </tr>
+        {{/items.length}}
+    </tbody>
+</table>
+

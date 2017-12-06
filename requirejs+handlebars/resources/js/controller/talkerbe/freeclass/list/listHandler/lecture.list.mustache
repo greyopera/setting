@@ -1,0 +1,23 @@
+<ul class="freeclass__video_list">
+    {{#items.length}}
+        {{#items}}
+            <li class="freeclass__video_list__items" data-kinds="{{ kinds }}">
+
+                <div class="items_con">
+                    <div class="thumbs">
+                        <img class="thumbs_img" src="{{ thumnailImage }}" alt="오픽 해설강의">
+                    </div>
+                    <div class="info">
+                        <h4 class="title">{{{ title }}}</h4>
+                    </div>
+                </div>
+
+                <div class="freeclass__video_list__context isYoutube" data-src="{{ youtubeUrl }}">
+                    <button type="button" class="btn_youtube_close">
+                        <span><img src="/static/talkerbe/images/test/btn_youtube_close.png" alt=""></span></button>
+                </div>
+
+            </li>
+        {{/items}}
+    {{/items.length}}
+</ul>

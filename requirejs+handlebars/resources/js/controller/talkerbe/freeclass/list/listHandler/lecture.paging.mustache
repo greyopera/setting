@@ -1,0 +1,9 @@
+<div class="pagination">
+    <div class="prev" class="disabled"><button type="button" class="button" disabled="disabled"><span>이전</span></button></div>
+    <ul class="pagination">
+        {{#pageRepeat}}
+            <li><button type="button" class="link"><span>{{ number }}</span></button></li>
+        {{/pageRepeat}}
+    </ul>
+    <div class="next" class="disabled"><button type="button" class="button" disabled="disabled"><span>다음</span></button></div>
+</div>

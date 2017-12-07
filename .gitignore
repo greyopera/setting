@@ -2,7 +2,7 @@ typings/
 node_modules/
 .DS_Store
 resources/
-
+package-lock.json
 
 # Created by https://www.gitignore.io/api/jetbrains,visualstudio
 

@@ -76,12 +76,12 @@ gulp.task('nodemon', (cb) => {
   });
 
   stream.on('start', function () {
-    $.gutil.log(gutil.colors.green(cool() + ' Nodemon server started!'));
+    $.util.log($.util.colors.green(cool() + ' Nodemon server started!'));
     if ($.browserSync.active) $.browserSync.reload();
   }).on('restart', function () {
-    $.gutil.log($.gutil.colors.blue(cool() + ' Nodemon server restarted!'));
+    $.util.log($.util.colors.blue(cool() + ' Nodemon server restarted!'));
   }).on('crash', function () {
-    $.gutil.log($.gutil.colors.red(cool() + ' Nodemon has crashed!'));
+    $.util.log($.util.colors.red(cool() + ' Nodemon has crashed!'));
     stream.emit('restart', 10);  // restart the server in 10 seconds
   });
 
